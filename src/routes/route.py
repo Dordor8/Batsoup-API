@@ -4,6 +4,7 @@ from datetime import datetime
 from fastapi import APIRouter
 from pydantic import BaseModel
 
+from main import config
 from src.metadata_handler.endpoint_validation.destination_validation.sql_dastination_validation import sql_validate
 from src.metadata_handler.endpoint_validation.source_validation.http_source_validation import http_validate
 from src.metadata_handler.endpoint_validation.destination_validation.s3_dastination_validation import s3_validate
@@ -38,9 +39,9 @@ def source_validation(source_type:str, source_connection_details:dict) -> bool:
     the_connection_is_proper = False
 
     match source_type:
-        case "kapka":
+        case config.get('Endpoint_types', 'kapka'):
             the_connection_is_proper = kapka_validate(source_connection_details)
-        case "http":
+        case config.get('Endpoint_types', 'http'):
             the_connection_is_proper = http_validate(source_connection_details)
 
     return the_connection_is_proper
@@ -53,9 +54,9 @@ def destination_validation(destination: list[Destination]) -> bool:
 
     for destination_details in destination:
         match destination_details.destination_type:
-            case "s3":
+            case config.get('Endpoint_types', 's3'):
                 the_connection_is_proper = s3_validate(destination_details.destination_connection_details)
-            case "sql":
+            case config.get('Endpoint_types', 'sql'):
                 the_connection_is_proper = sql_validate(destination_details.destination_connection_details)
 
         if the_connection_is_proper and connections == True:
@@ -68,18 +69,18 @@ def destination_validation(destination: list[Destination]) -> bool:
 
 def write_source_info_to_db(fk_id, source_type, source_connection_details):
     match source_type:
-        case "kapka":
+        case config.get('Endpoint_types', 'kapka'):
             kapka_data_writer(fk_id, source_connection_details)
-        case "http":
+        case config.get('Endpoint_types', 'http'):
             http_data_writer(fk_id, source_connection_details)
 
 
 def write_destination_info_to_db(fk_id, destination):
     for destination_details in destination:
         match destination_details.destination_type:
-            case "s3":
+            case config.get('Endpoint_types', 's3'):
                 s3_data_writer(fk_id, destination_details.destination_connection_details)
-            case "sql":
+            case config.get('Endpoint_types', 'sql'):
                 sql_data_writer(fk_id, destination_details.destination_connection_details)
 
 
