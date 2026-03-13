@@ -1,5 +1,7 @@
 from fastapi import APIRouter
 
+from src.metadata_handler.metadata_database_hendler.metadata_reader.contact_details_reader import \
+    read_contact_details_to_database
 from src.metadata_handler.metadata_database_hendler.metadata_writer.postgres.contact_details_writer import \
     write_contact_details_to_database
 
@@ -15,4 +17,9 @@ def insert_contact(route_id: str, contact_info: str = 0, reliability_estimation:
 
 def write_contact_details_to_db(route_id:str, contact_info:str|None, description:str|None,
                                    reliability_estimation:int|None, data_source:str|None):
-    write_contact_details_to_database(route_id, contact_info, description, reliability_estimation, data_source)
+    return write_contact_details_to_database(route_id, contact_info, description, reliability_estimation, data_source)
+
+
+@router.get("/get_contact_details")
+def get_contact(route_id: str):
+    return read_contact_details_to_database(route_id)
