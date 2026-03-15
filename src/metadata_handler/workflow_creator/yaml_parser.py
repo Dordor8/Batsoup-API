@@ -5,38 +5,50 @@ TEMPLATE_PATH = './resources/templates/template-template.yaml'
 TASK_PATH = './resources/templates/task-template.yaml'
 WORKFLOW_PATH = './resources/templates/workflow-template.yaml'
 MAIN_TEMPLATE_NAME = 'main'
+DEFAULT_COMMAND = 'python'
+DEFAULT_ARGS = 'main.py'
 
 yaml = YAML()
 
-def get_template(input_artifacts: dict[str, str],
+def get_template(input_artifacts: dict[str, str] | None,
                  name: str,
                  image: str,
-                 command: str,
-                 args: str,
                  env_variables: dict[str, str],
-                 output_artifacts: dict[str, str]) -> dict:
+                 output_artifacts: dict[str, str] | None,
+                 command: str = DEFAULT_COMMAND,
+                 args: str = DEFAULT_ARGS,
+                ) -> dict:
 
     with open(TEMPLATE_PATH, "r") as template_file:
         content = yaml.load(template_file)
 
-    content['inputs']['artifacts'] = [{'name': key, 'path': value} for key, value in input_artifacts.items()]
+    if input_artifacts:
+        content['inputs']['artifacts'] = [{'name': key, 'path': value} for key, value in input_artifacts.items()]
+
     content['name'] = name
     content['container']['image'] = image
     content['container']['command'] = [command]
     content['container']['args'] = [DoubleQuotedScalarString(args)]
     content['container']['env'] = [{'name': key, 'value': DoubleQuotedScalarString(value)} for key, value in env_variables.items()]
-    content['outputs']['artifacts'] = [{'name': key, 'path': value} for key, value in output_artifacts.items()]
+
+    if output_artifacts:
+        content['outputs']['artifacts'] = [{'name': key, 'path': value} for key, value in output_artifacts.items()]
 
     return content
 
-def get_task(name: str, template: str, dependencies: list[str], when: str) -> dict:
+def get_task(name: str, template: str, dependencies: list[str], artifacts: dict[str, str] | None, when: str | None) -> dict:
     with open(TASK_PATH, "r") as task_file:
         content = yaml.load(task_file)
 
     content['name'] = name
     content['template'] = template
     content['dependencies'] = [DoubleQuotedScalarString(dependency) for dependency in dependencies]
-    content['when'] = DoubleQuotedScalarString(when)
+
+    if artifacts:
+        content['arguments']['artifacts'] = [{'name': key, 'path': DoubleQuotedScalarString('{{' + value + '}}')} for key, value in artifacts.items()]
+
+    if when:
+        content['when'] = DoubleQuotedScalarString(when)
 
     return content
 

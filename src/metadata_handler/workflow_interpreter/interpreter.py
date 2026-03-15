@@ -1,7 +1,13 @@
 from src.metadata_handler.workflow_interpreter.components import Component, Extract, Load, Transform
 from src.routes.route import Destination
+from src.metadata_handler.workflow_creator.yaml_parser import *
 from uuid import uuid4
 
+ENV_IN_FOLDER = "INPUT_FOLDER"
+ENV_OUT_FOLDER = "OUTPUT_FOLDER"
+IN_PATH = "/tmp/input/"
+OUT_PATH = "/tmp/output/"
+IMAGE_PREFIX = "dorfa/aw-{name}:latest"
 
 def value_in_dict(d: dict, value) -> bool:
     for k, v in d.items():
@@ -69,3 +75,13 @@ class Workflow:
                 del self.dependencies[key]
 
                 self.dependencies[transformation.id] = value
+
+    def to_yaml(self, path: str) -> None:
+        templates: list[dict] = []
+        tasks: list[dict] = []
+
+        for component in self.components:
+            if isinstance(component, Load):
+                image = IMAGE_PREFIX.format(name=component.type)
+                component.connection_details[ENV_OUT_FOLDER] = OUT_PATH
+                templates.append(get_template(None, component.type + component.id, image, component.connection_details, {'output': OUT_PATH}))
