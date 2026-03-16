@@ -19,6 +19,15 @@ from src.metadata_handler.metadata_database_hendler.postgres.metadata_writer.gen
 from src.metadata_handler.metadata_database_hendler.postgres.metadata_writer.source_data_writer.kapka_data_writer import \
     kapka_data_writer
 
+import configparser
+
+from src.metadata_handler.workflow_interpreter.interpreter import Workflow, new_id
+YAML_PATH = "workflows/{name}.yaml"
+
+S3_LOADER = "s3-writer"
+SQL_LOADER = "sql-writer"
+KAFKA_EXTRACT = "kafka-reader"
+
 router = APIRouter(
     prefix="/route",
 )
@@ -28,32 +37,66 @@ class Destination(BaseModel):
     destination_type: str
     destination_connection_details: dict
 
+class Source(BaseModel):
+    source_type: str
+    source_connection_details: dict
+
 
 #TODO: Add the use of is_one_time_route
 @router.post("/create")
-def create_route(name: str, provider: str, data_format: str, schema_mapping: dict, frequency: int, file_size: int,
-                 is_one_time_route: bool, source_type: str, source_connection_details: dict,
-                 destination: list[Destination]) -> str:
-    validate_data_format(data_format)
-    route_id = write_route_to_db(name, provider, data_format, schema_mapping, frequency, file_size, source_type,
-                                 source_connection_details, destination)
+def create_route(name: str,
+                 provider: str,
+                 data_format: str,
+                 schema_mapping: dict,
+                 frequency: int,
+                 file_size: int,
+                 is_one_time_route: bool,
+                 add_default_transformations: bool,
+                 source: Source,
+                 destinations: list[Destination]
+                 ) -> str:
 
-    return str(route_id)
+    validate_data_format(data_format)
+
+    # route_id = write_route_to_db(
+    #     name,
+    #     provider,
+    #     data_format,
+    #     schema_mapping,
+    #     frequency, file_size,
+    #     source.source_type,
+    #     source.source_connection_details,
+    #     destinations
+    # )
+
+    new_workflow = Workflow(
+        name,
+        provider,
+        data_format,
+        schema_mapping,
+        frequency,
+        file_size,
+        is_one_time_route,
+        source.source_type,
+        source.source_connection_details,
+        destinations,
+        add_default_transformations
+    )
+
+    new_workflow.to_yaml(YAML_PATH.format(name=name + new_id()))
+
+    return "ok"#str(route_id)
 
 
 #TODO: Priority B - Do not do this for now
 def source_validation(source_type: str, source_connection_details: dict) -> bool:
-    the_connection_is_proper = False
+    if KAFKA_EXTRACT == source_type:
+        kapka_validate(source_connection_details)
+        return True
+    else:
+        return False
 
-    match source_type:
-        case "kapka":
-            the_connection_is_proper = kapka_validate(source_connection_details)
-        case "http":
-            the_connection_is_proper = http_validate(source_connection_details)
-        case _:
-            the_connection_is_proper = False
 
-    return the_connection_is_proper
 
 
 #TODO: Priority B - Do not do this for now
@@ -79,22 +122,20 @@ def destination_validation(destination: list[Destination]) -> bool:
 
 
 def write_source_info_to_db(fk_id: UUID, source_type: str, source_connection_details: dict) -> None:
-    match source_type:
-        case "kapka":
-            kapka_data_writer(fk_id, source_connection_details)
-        case _:
-            raise HTTPException(status_code=422, detail="Source type not supported")
+    if source_type == KAFKA_EXTRACT:
+        kapka_data_writer(fk_id, source_connection_details)
+    else:
+        raise HTTPException(status_code=422, detail="Source type not supported")
 
 
 def write_destination_info_to_db(fk_id: UUID, destination: list[Destination]) -> None:
     for destination_details in destination:
-        match destination_details.destination_type:
-            case "s3":
-                s3_data_writer(fk_id, destination_details.destination_connection_details)
-            case "sql":
-                sql_data_writer(fk_id, destination_details.destination_connection_details)
-            case _:
-                raise HTTPException(status_code=422, detail="Destination type not supported")
+        if destination_details.destination_type == S3_LOADER:
+            s3_data_writer(fk_id, destination_details.destination_connection_details)
+        elif destination_details.destination_type == SQL_LOADER:
+            sql_data_writer(fk_id, destination_details.destination_connection_details)
+        else:
+            raise HTTPException(status_code=422, detail="Destination type not supported")
 
 
 def write_route_to_db(name: str, provider: str, data_format: str, schema_mapping: dict, frequency: int, file_size: int,

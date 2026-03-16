@@ -1,5 +1,5 @@
+from pydantic import BaseModel
 from src.metadata_handler.workflow_interpreter.components import Component, Extract, Load, Transform
-from src.routes.route import Destination
 from src.metadata_handler.workflow_creator.yaml_parser import *
 from src.metadata_handler.workflow_interpreter.validation_default import DEFAULT_VALIDATION_DETAILS
 from uuid import uuid4
@@ -14,7 +14,9 @@ IMAGE_PREFIX = "dorfa/aw-{name}:latest"
 FROM_ARTIFACT_PREFIX = "tasks.{name}.outputs.artifacts.output"
 S3_LOAD_TYPE = "s3-writer"
 
-
+class Destination(BaseModel):
+    destination_type: str
+    destination_connection_details: dict
 
 def value_in_dependencies(dependencies: list[tuple[str, str]], value: str) -> bool:
     for dependency in dependencies:
@@ -23,7 +25,7 @@ def value_in_dependencies(dependencies: list[tuple[str, str]], value: str) -> bo
     return False
 
 def new_id() -> str:
-    return 'a' + str(uuid4().hex[:8])
+    return 'x' + str(uuid4().hex[:8])
 
 class Workflow:
     components: list[Component]

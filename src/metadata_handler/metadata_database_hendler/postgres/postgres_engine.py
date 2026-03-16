@@ -58,7 +58,7 @@ class KapkaConactionData(Base):
     topic = Column(String)
     bootstrap_server = Column(String)
     group_id = Column(String)
-    inactive_time_ms = Column(Integer)
+    messages_amount = Column(Integer)
 
     general_info = relationship("GeneralInfo")
 
