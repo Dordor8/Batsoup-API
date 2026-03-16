@@ -1,8 +1,13 @@
-from fastapi import APIRouter
+from uuid import UUID
 
-from src.metadata_handler.metadata_database_hendler.metadata_reader.contact_details_reader import \
+from fastapi import APIRouter, HTTPException
+from starlette import status
+
+from src.metadata_handler.metadata_database_hendler.postgres.metadata_reader.contact_details_reader import \
     read_contact_details_to_database
-from src.metadata_handler.metadata_database_hendler.metadata_writer.postgres.contact_details_writer import \
+from src.metadata_handler.metadata_database_hendler.postgres.metadata_reader.general_data_reader import \
+    route_id_validation
+from src.metadata_handler.metadata_database_hendler.postgres.metadata_writer.contact_details_writer import \
     write_contact_details_to_database
 
 router = APIRouter(
@@ -12,7 +17,10 @@ router = APIRouter(
 #TODO: add route_id validation
 @router.post("/insert_contact_details")
 def insert_contact(route_id: str, contact_info: str = 0, reliability_estimation: int = 0, description: str = 0, data_source: str = 0):
-    write_contact_details_to_db(route_id, contact_info, description, reliability_estimation, data_source)
+    if route_id_validation(route_id):
+        write_contact_details_to_db(route_id, contact_info, description, reliability_estimation, data_source)
+    else:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid route_id")
 
 
 def write_contact_details_to_db(route_id:str, contact_info:str|None, description:str|None,
