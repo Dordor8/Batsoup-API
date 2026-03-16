@@ -10,6 +10,7 @@ IN_PATH = "/tmp/input/"
 OUT_PATH = "/tmp/output/"
 IMAGE_PREFIX = "dorfa/aw-{name}:latest"
 FROM_ARTIFACT_PREFIX = "tasks.{name}.outputs.artifacts.output"
+S3_LOAD_TYPE = "s3-writer"
 
 def value_in_dependencies(dependencies: list[tuple[str, str]], value: str) -> bool:
     for dependency in dependencies:
@@ -59,8 +60,11 @@ class Workflow:
     def default_transformations(self, extract_id) -> None:
         validation = Transform(new_id(), 'validation', {})
         self.add_transformation_after_component(extract_id, validation)
-        #optimization = Transform(new_id(), 'optimization', {})
-        #self.add_transformation_after_component(validation.id, optimization)
+
+        for component in self.components:
+            if component.type == S3_LOAD_TYPE:
+                optimization = Transform(new_id(), 'optimization', {})
+                self.add_transformation_before_component(component.id, optimization)
 
 
     def add_transformation_before_component(self, current_component_id: str, transformation: Transform) -> None:
@@ -69,12 +73,16 @@ class Workflow:
         if not value_in_dependencies(self.dependencies, current_component_id):
             raise Exception(f"component {current_component_id} not found in dependencies")
 
+        new_dependencies = []
+
         for dependency in self.dependencies:
             if dependency[1] == current_component_id:
-                self.dependencies.append((dependency[0], transformation.id))
-                self.dependencies.append((transformation.id, dependency[1]))
+                new_dependencies.append((dependency[0], transformation.id))
+                new_dependencies.append((transformation.id, dependency[1]))
+            else:
+                new_dependencies.append(dependency)
 
-                del dependency
+        self.dependencies = new_dependencies
 
 
 
@@ -84,19 +92,17 @@ class Workflow:
         if not value_in_dependencies(self.dependencies, current_component_id):
             raise Exception(f"component {current_component_id} not found in dependencies")
 
-        self.dependencies.append((current_component_id, transformation.id))
-
-        match_values = []
-        match_indexes = []
+        new_dependencies = []
 
         for dependency in self.dependencies:
             if dependency[0] == current_component_id:
-                match_values.append(dependency[0])
-                
-                del dependency
+                self.dependencies.append((transformation.id, dependency[1]))
+            else:
+                new_dependencies.append(dependency)
 
-        for value in match_values:
-            self.dependencies.append((transformation.id, value))
+        self.dependencies = new_dependencies
+
+        self.dependencies.append((current_component_id, transformation.id))
 
     def to_yaml(self, path: str) -> None:
         templates: list[dict] = []
