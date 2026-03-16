@@ -1,3 +1,0 @@
-def read_contact_details_to_database(route_id:str):
-    ...
-    return ["will return contact details"]

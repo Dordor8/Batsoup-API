@@ -8,15 +8,15 @@ from src.metadata_handler.endpoint_validation.destination_validation.sql_dastina
 from src.metadata_handler.endpoint_validation.source_validation.http_source_validation import http_validate
 from src.metadata_handler.endpoint_validation.destination_validation.s3_dastination_validation import s3_validate
 from src.metadata_handler.endpoint_validation.source_validation.kapka_source_validation import kapka_validate
-from src.metadata_handler.metadata_database_hendler.metadata_writer.postgres.destination_data_writer.s3_data_writer import \
+from src.metadata_handler.metadata_database_hendler.postgres.metadata_reader.general_data_reader import \
+    route_id_validation
+from src.metadata_handler.metadata_database_hendler.postgres.metadata_writer.destination_data_writer.s3_data_writer import \
     s3_data_writer
-from src.metadata_handler.metadata_database_hendler.metadata_writer.postgres.destination_data_writer.sql_data_writer import \
+from src.metadata_handler.metadata_database_hendler.postgres.metadata_writer.destination_data_writer.sql_data_writer import \
     sql_data_writer
-from src.metadata_handler.metadata_database_hendler.metadata_writer.postgres.general_data_writer import \
+from src.metadata_handler.metadata_database_hendler.postgres.metadata_writer.general_data_writer import \
     write_general_data_to_database
-from src.metadata_handler.metadata_database_hendler.metadata_writer.postgres.source_data_writer.http_data_writer import \
-    http_data_writer
-from src.metadata_handler.metadata_database_hendler.metadata_writer.postgres.source_data_writer.kapka_data_writer import \
+from src.metadata_handler.metadata_database_hendler.postgres.metadata_writer.source_data_writer.kapka_data_writer import \
     kapka_data_writer
 
 router = APIRouter(
@@ -82,8 +82,6 @@ def write_source_info_to_db(fk_id: UUID, source_type: str, source_connection_det
     match source_type:
         case "kapka":
             kapka_data_writer(fk_id, source_connection_details)
-        case "http":
-            http_data_writer(fk_id, source_connection_details)
         case _:
             raise HTTPException(status_code=422, detail="Source type not supported")
 
