@@ -12,3 +12,14 @@ def read_contact_details_to_database(route_id:str):
         for row in conn.execute(stmt):
             data += str(row) + "/n"
     return data
+
+
+def unique_id_validate(route_id:str):
+    stmt = select(ContactDetails.general_info_id).where(ContactDetails.general_info_id == route_id)
+    with engine.connect() as conn:
+        for row in conn.execute(stmt):
+            if str(row) == "(UUID('" + route_id + "'),)":
+                return False
+            else:
+                return True
+        return True

@@ -24,13 +24,16 @@ class GeneralInfo(Base):
     file_size = Column(Integer)
 
     contact_details = relationship("ContactDetails", backref="GeneralInfo")
+    sql_conation_data = relationship("SqlConationData", backref="GeneralInfo")
+    kapka_conaction_data = relationship("KapkaConactionData", backref="GeneralInfo")
+    s3_conaction_data = relationship("S3ConactionData", backref="GeneralInfo")
 
 
 class ContactDetails(Base):
     __tablename__ = "contact_details"
 
-    id = Column(Integer, Sequence("some_id_seq", start=1), primary_key=True, nullable=False)
-    general_info_id = Column(Uuid, ForeignKey('general_info.id'), nullable=False, primary_key=True)
+    id = Column(Integer, Sequence("id", start=1), primary_key=True, nullable=False)
+    general_info_id = Column(Uuid, ForeignKey('general_info.id'), unique=True, nullable=False)
     contact_info = Column(String)
     reliability_estimation = Column(Integer)
     description = Column(String)
@@ -39,17 +42,44 @@ class ContactDetails(Base):
     general_info = relationship("GeneralInfo")
 
 
+class SqlConationData(Base):
+    __tablename__ = "sql_conation_data"
+    id = Column(Integer, Sequence("id_seq", start=1), primary_key=True, nullable=False)
+    general_info_id = Column(Uuid, ForeignKey('general_info.id'), nullable=False)
+    table_name = Column(String)
+
+    general_info = relationship("GeneralInfo")
 
 
+class KapkaConactionData(Base):
+    __tablename__ = "kapka_conaction_data"
+    id = Column(Integer, Sequence("some_id", start=1), primary_key=True, nullable=False)
+    general_info_id = Column(Uuid, ForeignKey('general_info.id'), nullable=False)
+    topic = Column(String)
+    bootstrap_server = Column(String)
+    group_id = Column(String)
+    inactive_time_ms = Column(Integer)
+
+    general_info = relationship("GeneralInfo")
+
+
+class S3ConactionData(Base):
+    __tablename__ = "s3_conaction_data"
+    id = Column(Integer, Sequence("id_sequence", start=1), primary_key=True, nullable=False)
+    general_info_id = Column(Uuid, ForeignKey('general_info.id'), nullable=False)
+    access_key_id = Column(String)
+    access_secret_key = Column(String)
+    bucket_name = Column(String)
+    group_name = Column(String)
+    prefix = Column(String)
+
+    general_info = relationship("GeneralInfo")
 
 
 try:
     conn = engine.connect()
 except:
     print("Error connecting to PostgreSQL")
-
-Session = sessionmaker(bind=engine)
-session = Session()
 
 def create_engine():
     Base.metadata.create_all(engine)
