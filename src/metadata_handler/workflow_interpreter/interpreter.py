@@ -7,6 +7,7 @@ from uuid import uuid4
 ENV_SCHEMA = "SCHEMA"
 ENV_IN_FOLDER = "INPUT_FOLDER"
 ENV_OUT_FOLDER = "OUTPUT_FOLDER"
+ENV_WORKFLOW_NAME = "WORKFLOW_NAME"
 IN_PATH = "/tmp/input/"
 OUT_PATH = "/tmp/output/"
 IMAGE_PREFIX = "dorfa/aw-{name}:latest"
@@ -22,7 +23,7 @@ def value_in_dependencies(dependencies: list[tuple[str, str]], value: str) -> bo
     return False
 
 def new_id() -> str:
-    return str(uuid4())
+    return str(uuid4().hex[:8])
 
 class Workflow:
     components: list[Component]
@@ -61,12 +62,13 @@ class Workflow:
             self.default_transformations(extract.id)
 
     def default_transformations(self, extract_id) -> None:
-        validation = Transform(new_id(), 'validation', DEFAULT_VALIDATION_DETAILS)
+        DEFAULT_VALIDATION_DETAILS[ENV_WORKFLOW_NAME] = self.name + '-' + new_id()
+        validation = Transform(new_id(), 'data-validation', DEFAULT_VALIDATION_DETAILS)
         self.add_transformation_after_component(extract_id, validation)
 
         for component in self.components:
             if component.type == S3_LOAD_TYPE:
-                optimization = Transform(new_id(), 'optimization', {})
+                optimization = Transform(new_id(), 's3-optimization', {})
                 self.add_transformation_before_component(component.id, optimization)
 
 
