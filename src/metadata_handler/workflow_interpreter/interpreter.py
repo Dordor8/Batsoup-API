@@ -1,6 +1,7 @@
 from src.metadata_handler.workflow_interpreter.components import Component, Extract, Load, Transform
 from src.routes.route import Destination
 from src.metadata_handler.workflow_creator.yaml_parser import *
+from src.metadata_handler.workflow_interpreter.validation_default import DEFAULT_VALIDATION_DETAILS
 from uuid import uuid4
 
 ENV_SCHEMA = "SCHEMA"
@@ -11,6 +12,8 @@ OUT_PATH = "/tmp/output/"
 IMAGE_PREFIX = "dorfa/aw-{name}:latest"
 FROM_ARTIFACT_PREFIX = "tasks.{name}.outputs.artifacts.output"
 S3_LOAD_TYPE = "s3-writer"
+
+
 
 def value_in_dependencies(dependencies: list[tuple[str, str]], value: str) -> bool:
     for dependency in dependencies:
@@ -58,7 +61,7 @@ class Workflow:
             self.default_transformations(extract.id)
 
     def default_transformations(self, extract_id) -> None:
-        validation = Transform(new_id(), 'validation', {})
+        validation = Transform(new_id(), 'validation', DEFAULT_VALIDATION_DETAILS)
         self.add_transformation_after_component(extract_id, validation)
 
         for component in self.components:
