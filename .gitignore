@@ -6,6 +6,8 @@
 #secrets
 src/metadata_handler/workflow_interpreter/validation_default.py
 
+workflows/
+
 # User-specific files
 *.rsuser
 *.suo
