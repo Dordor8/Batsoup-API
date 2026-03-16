@@ -23,7 +23,7 @@ def value_in_dependencies(dependencies: list[tuple[str, str]], value: str) -> bo
     return False
 
 def new_id() -> str:
-    return str(uuid4().hex[:8])
+    return 'a' + str(uuid4().hex[:8])
 
 class Workflow:
     components: list[Component]
