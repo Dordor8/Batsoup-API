@@ -1,0 +1,88 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: my-channel-
+  annotations:
+    workflows.argoproj.io/description: |
+      ''
+    workflows.argoproj.io/version: '>= 3.1.0'
+spec:
+  serviceAccountName: argo
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: 4b35028d-df70-4819-b2d3-583f2a15c371
+        template: kafka-reader4b35028d-df70-4819-b2d3-583f2a15c371
+        dependencies: []
+      - name: 8be13001-d01c-4d71-8c81-251d23e900cf
+        template: s3-writer8be13001-d01c-4d71-8c81-251d23e900cf
+        dependencies:
+        - "4b35028d-df70-4819-b2d3-583f2a15c371"
+        arguments:
+          artifacts:
+          - name: input
+            from: "{{tasks.4b35028d-df70-4819-b2d3-583f2a15c371.outputs.artifacts.output}}"
+      - name: 619131c3-4946-46b1-b930-5a272bea81f8
+        template: sql-writer619131c3-4946-46b1-b930-5a272bea81f8
+        dependencies:
+        - "4b35028d-df70-4819-b2d3-583f2a15c371"
+        arguments:
+          artifacts:
+          - name: input
+            from: "{{tasks.4b35028d-df70-4819-b2d3-583f2a15c371.outputs.artifacts.output}}"
+  - name: kafka-reader4b35028d-df70-4819-b2d3-583f2a15c371
+    container:
+      image: dorfa/aw-kafka-reader:latest
+      command:
+      - python
+      args:
+      - "main.py"
+      env:
+      - name: SERVERS
+        value: "kafka.com"
+      - name: SCHEMA
+        value: "{}"
+      - name: OUTPUT_FOLDER
+        value: "/tmp/output/"
+    outputs:
+      artifacts:
+      - name: output
+        path: /tmp/output/
+  - name: s3-writer8be13001-d01c-4d71-8c81-251d23e900cf
+    container:
+      image: dorfa/aw-s3-writer:latest
+      command:
+      - python
+      args:
+      - "main.py"
+      env:
+      - name: SERVERS
+        value: "s3.com"
+      - name: SCHEMA
+        value: "{}"
+      - name: INPUT_FOLDER
+        value: "/tmp/input/"
+    inputs:
+      artifacts:
+      - name: input
+        path: /tmp/input/
+  - name: sql-writer619131c3-4946-46b1-b930-5a272bea81f8
+    container:
+      image: dorfa/aw-sql-writer:latest
+      command:
+      - python
+      args:
+      - "main.py"
+      env:
+      - name: SERVERS
+        value: "postgres.com"
+      - name: SCHEMA
+        value: "{}"
+      - name: INPUT_FOLDER
+        value: "/tmp/input/"
+    inputs:
+      artifacts:
+      - name: input
+        path: /tmp/input/
