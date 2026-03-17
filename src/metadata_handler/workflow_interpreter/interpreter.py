@@ -1,3 +1,5 @@
+import json
+
 from pydantic import BaseModel
 from src.metadata_handler.workflow_interpreter.components import Component, Extract, Load, Transform
 from src.metadata_handler.workflow_creator.yaml_parser import *
@@ -117,7 +119,7 @@ class Workflow:
 
         for component in self.components:
             image = IMAGE_PREFIX.format(name=component.type)
-            component.env_details[ENV_SCHEMA] = str(self.schema_mapping)
+            component.env_details[ENV_SCHEMA] = json.dumps(self.schema_mapping)
 
             if isinstance(component, Extract):
                 component.env_details[ENV_OUT_FOLDER] = OUT_PATH
