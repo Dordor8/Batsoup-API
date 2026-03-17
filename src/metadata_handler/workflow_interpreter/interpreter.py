@@ -123,7 +123,7 @@ class Workflow:
 
             if isinstance(component, Extract):
                 component.env_details[ENV_OUT_FOLDER] = OUT_PATH
-                templates.append(get_template(None, component.type + component.id, image, component.env_details, {'output': OUT_PATH}))
+                templates.append(get_template(None, component.id, image, component.env_details, {'output': OUT_PATH}))
 
                 tasks.append(get_task(component.id,
                                       component.type + component.id,
@@ -135,11 +135,11 @@ class Workflow:
             if isinstance(component, Transform):
                 component.env_details[ENV_OUT_FOLDER] = OUT_PATH
                 component.env_details[ENV_IN_FOLDER] = IN_PATH
-                templates.append(get_template({'input': IN_PATH}, component.type + component.id, image, component.env_details, {'output': OUT_PATH}))
+                templates.append(get_template({'input': IN_PATH}, component.id, image, component.env_details, {'output': OUT_PATH}))
 
             if isinstance(component, Load):
                 component.env_details[ENV_IN_FOLDER] = IN_PATH
-                templates.append(get_template({'input': IN_PATH}, component.type + component.id, image, component.env_details, None))
+                templates.append(get_template({'input': IN_PATH}, component.id, image, component.env_details, None))
 
 
             dependencies: list[str] = []
@@ -147,8 +147,8 @@ class Workflow:
                 if dependency[1] == component.id:
                     dependencies.append(dependency[0])
 
-            tasks.append(get_task(component.id,
-                                  component.type + component.id,
+            tasks.append(get_task(component.type + component.id,
+                                  component.id,
                                   dependencies,
                                   {'input': FROM_ARTIFACT_PREFIX.format(name=dependencies[0])},
                                   None
