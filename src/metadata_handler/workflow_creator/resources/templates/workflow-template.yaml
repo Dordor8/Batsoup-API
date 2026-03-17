@@ -12,5 +12,6 @@ spec:
   templates:
     - name: main
       dag:
+        failFast: false
         tasks:
           []
